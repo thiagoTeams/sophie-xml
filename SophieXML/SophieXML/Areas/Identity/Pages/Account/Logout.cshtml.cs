@@ -36,7 +36,8 @@ namespace SophieXML.Areas.Identity.Pages.Account
             }
             else
             {
-                return RedirectToPage();
+                //return RedirectToPage();
+                return LocalRedirect($"~/");
             }
         }
     }
