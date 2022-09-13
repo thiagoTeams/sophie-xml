@@ -4,7 +4,377 @@
     ViewData["Title"] = "Dashboard page";
 }
 
-<div class="text-left">
-    <h1>@ViewData["Title"]</h1>
+@section Styles {
+    <!-- libFileUpload http://hayageek.com/docs/jquery-upload-file.php -->
+    <link rel="stylesheet" href="~/lib/uploadfile/uploadfile.css">
+
+    <style>
+        .ajax-upload-dragdrop {
+            width: 100% !important;
+        }
+
+        .ajax-file-upload {
+            height: 100%;
+            padding: 0px 0px;
+            margin: 0 10px 10px 0;
+            background: #fff;
+            -webkit-box-shadow: 0 2px 0 0 #fff;
+            box-shadow: 0 2px 0 0 #fff;
+        }
+
+        .custom-red {
+        }
+
+        .custom-green {
+        }
+
+        img.portimg {
+            display: none;
+            max-width: 200px;
+            max-height: 200px;
+        }
+
+        div.scrollView {
+            overflow: auto;
+            white-space: nowrap;
+        }
+    </style>
+
+    <!-- json-table-editor https://www.jqueryscript.net/table/json-table-editor.html -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-contextmenu/2.7.1/jquery.contextMenu.min.css">
+    @*<link rel="stylesheet" href="~/lib/json-table-editor/jquery-contextmenu/dist/jquery.contextMenu.min.css">*@
+}
+
+@await Html.PartialAsync("~/Pages/Shared/_StatusMessage.cshtml", Model.StatusMessage)
+
+<div class="col-md-12">
+    <form asp-page-handler="Progress" method="post" enctype="multipart/form-data" id="quickForm" role="form">
+        <div class="card card-primary card-outline">
+            <!-- card-header -->
+            <div class="card-header">
+                <h3 class="card-title">@ViewData["Title"]</h3>
+            </div>
+
+            <!-- card-body -->
+            <div class="card-body" style="display: none;">
+                <div class="form-group">
+                    <div class="btn btn-default btn-file">
+                        <i class="fas fa-paperclip"></i> Attachment
+                        <input id="_myFileUpload" name="Attachment" accept="text/xml" type="file" multiple>
+                    </div>
+                    <p class="help-block">Please select file max: 32MB</p>
+                </div>
+            </div>
+
+            <!-- card-footer -->
+            <div class="card-footer bg-white" style="display: none;">
+                <ul id="show_myFileUpload" class="mailbox-attachments d-flex align-items-stretch clearfix">
+                    @*<li>
+                    <span class="mailbox-attachment-icon">
+                        <i class="far fa-file-word"></i>
+                    </span>
+                    <div class="mailbox-attachment-info">
+                        <a href="#" class="mailbox-attachment-name"><i class="fas fa-paperclip"></i> App Description.docx</a>
+                        <span class="mailbox-attachment-size clearfix mt-1">
+                            <span>1,245 KB</span>
+                            <a href="#" class="btn btn-default btn-sm float-right"><i class="fas fa-trash-alt"></i></a>
+                            <a href="#" class="btn btn-default btn-sm float-right"><i class="fas fa-cloud-download-alt"></i></a>
+                        </span>
+                    </div>
+                </li>
+                <li>
+                    <span class="mailbox-attachment-icon has-img">
+                        <img src="../../dist/img/photo1.png" alt="Attachment">
+                    </span>
+                    <div class="mailbox-attachment-info">
+                        <a href="#" class="mailbox-attachment-name"><i class="fas fa-camera"></i> photo1.png</a>
+                        <span class="mailbox-attachment-size clearfix mt-1">
+                            <span>2.67 MB</span>
+                            <a href="#" class="btn btn-default btn-sm float-right"><i class="fas fa-trash-alt"></i></a>
+                            <a href="#" class="btn btn-default btn-sm float-right"><i class="fas fa-cloud-download-alt"></i></a>
+                        </span>
+                    </div>
+                </li>*@
+                </ul>
+            </div>
+
+            <!-- card-footer -->
+            <div class="card-footer bg-white">
+                <div id="_fileUploader">Upload</div>
+            </div>
+
+            <!-- card-footer -->
+            <div class="card-footer bg-white">
+                <button asp-page-handler="Progress" type="submit" class="btn btn-primary"><i class="fas fa-paper-plane"></i> Progess</button>
+            </div>
+
+            <!-- card-footer -->
+            <div class="card-footer bg-white" style="margin: 0px 0px 0px 0px !important; padding: 0px 0px 0px 0px !important;">
+                <textarea id="json_input" rows="8" style="width: 100%; display:none;">
+{
+    "catalog": {
+        "book": [
+            {
+                "id": "bk101",
+                "author": "Gambardella, Matthew",
+                "title": "XML Developer's Guide",
+                "genre": "Computer",
+                "price": 44.95,
+                "publish_date": "2000-10-01",
+                "description": "An in-depth look at creating applications with XML."
+            },
+          {
+                "id": "bk102",
+                "author": "Gambardella, Matthew",
+                "title": "XML Developer's Guide",
+                "genre": "Computer",
+                "price": 44.95,
+                "publish_date": "2000-10-01",
+                "description": "An in-depth look at creating applications with XML."
+            }
+        ]
+    }
+}
+                </textarea>
+                <div class="row mt-3" style="display:none;">
+                    <div class='col-md-4'></div>
+                    <div id='button_container' class='col-md-3'>
+                        <button id='btn_json_to_table' type="button" class="btn btn-primary btn-lg btn-block">JSON to Table</button>
+                    </div>
+                </div>
+                <div class="row mt-3" style="margin: 0px 0px 0px 0px !important; padding: 0px 0px 0px 0px !important;">
+                    <div id='table_container' class='col-md-12 scrollView' style="margin: 0px 0px 0px 0px !important; padding: 0px 0px 0px 0px !important;"></div>
+                </div>
+                <div class="row " style="display:none;">
+                    <div id='button_container' class='col-md-3'>
+                        <button id='btn_table_to_json' type="button" class="btn btn-primary btn-lg btn-block">Table to JSON</button>
+                    </div>
+                </div>
+                <div class="row mt-3" style="display:none;">
+                    <div id='json_output' class='col-md-12'></div>
+                </div>
+            </div>
+
+        </div>
+    </form>
 </div>
 
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <!-- libFileUpload http://hayageek.com/docs/jquery-upload-file.php -->
+    @*<script src="~/lib/uploadfile/jquery.min.js"></script>*@
+    <script src="~/lib/uploadfile/jquery.form.js"></script>
+    <script src="~/lib/uploadfile/jquery.uploadfile.min.js"></script>
+
+    <!-- json-table-editor https://www.jqueryscript.net/table/json-table-editor.html -->
+    @*<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>*@
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-contextmenu/2.7.1/jquery.contextMenu.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-contextmenu/2.7.1/jquery.ui.position.js"></script>
+    @*<script src="~/lib/json-table-editor/jquery-contextmenu/dist/jquery.contextMenu.min.js"></script>
+    <script src="~/lib/json-table-editor/jquery-contextmenu/dist/jquery.contextMenu.min.js"></script>*@
+    <script src="~/lib/json-table-editor/jsoneditor.js"></script>
+
+    <script>
+        function _onDelete(index, el) {
+            console.log(index);
+            var myFileUpload = document.getElementById("_myFileUpload");
+            var files = myFileUpload.files;
+
+            @*remove file at index*@
+            var fileBuffer = [];
+            Array.prototype.push.apply(fileBuffer, files);
+            fileBuffer.splice(index, 1);
+            const dT = new ClipboardEvent('').clipboardData || new DataTransfer();
+            for (let file of fileBuffer) { dT.items.add(file); }
+            myFileUpload.files = dT.files;
+
+            files = myFileUpload.files;
+            console.log(files);
+            $(".image_" + index).remove();
+        };
+
+        function _onDownload(index, el) {
+            console.log("_onDownload: " + index);
+            var myFileUpload = document.getElementById("_myFileUpload");
+            var files = myFileUpload.files;
+            @*$(".image_" + index).remove();*@
+        };
+
+        $(function () {
+            @* myFileUpload *@
+            function readURL() {
+                var $input = $(this);
+                var showMyFileUpload = document.getElementById("show_myFileUpload");
+                while (showMyFileUpload.firstChild) showMyFileUpload.removeChild(showMyFileUpload.firstChild);
+
+                for (let i = 0; i < this.files.length; i++) {
+                    var file = this.files[i];
+                    console.log("File " + i + ":");
+                    console.log(file);
+                    var fileName = file.name;
+                    var fileSize = (file.size / 1024).toFixed(2);
+                    var fileType = file.type;
+
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        @*console.log(e.target);*@
+                        var li = document.createElement('li');
+                        li.className = 'image_' + i;
+                        li.setAttribute('style', 'display: flex;justify-content:center;align-items:center;');
+                        @*li.innerHTML = '<span class="mailbox-attachment-icon">\
+                                            <i class="far fa-file-word"></i>\
+                                        </span>\
+                                        <div class="mailbox-attachment-info" style="display: flex;justify-content:center;align-items:flex-start;flex-direction:column;">\
+                                            <a href="#" class="mailbox-attachment-name"><i class="fas fa-paperclip"></i> ' + fileName + '</a>\
+                                            <span class="mailbox-attachment-size clearfix mt-1">\
+                                                <span>' + fileSize + ' KB</span>\
+                                                <a href="javascript:_onDelete('+i+', this)" class="del_btn btn btn-default btn-sm float-right"><i class="fas fa-trash-alt"></i></a>\
+                                                <a href="javascript:_onDownload('+i+', this)" class="download_btn btn btn-default btn-sm float-right"><i class="fas fa-cloud-download-alt"></i></a>\
+                                            </span>\
+                                        </div>';*@
+                        li.innerHTML = '<span class="mailbox-attachment-icon has-img">\
+                                            <img src="/images/xml.png" alt="Attachment" style="with:30px; height:30px;margin-right:10px">\
+                                        </span>\
+                                        <div class="mailbox-attachment-info" style="display: flex;justify-content:center;align-items:flex-start;flex-direction:column;">\
+                                            <a href="#" class="mailbox-attachment-name">' + fileName + '</a>\
+                                            <span class="mailbox-attachment-size clearfix mt-1">\
+                                                <span>' + fileSize + ' KB</span>\
+                                                <a href="javascript:_onDelete('+ i +', this)" class="btn btn-default btn-sm float-right"><i class="fas fa-trash-alt"></i></a>\
+                                                <a href="javascript:_onDownload('+ i +', this)" class="btn btn-default btn-sm float-right"><i class="fas fa-cloud-download-alt"></i></a>\
+                                            </span>\
+                                        </div>';
+                        showMyFileUpload.appendChild(li);
+                    }
+                    reader.readAsDataURL(file);
+                }
+            };
+            $("#myFileUpload").change(readURL);
+
+            @*libFileUpload*@
+            var count = 0;
+            $("#_fileUploader").uploadFile({
+                url: "#",
+                returnType: "json",
+                multiple: true,
+                dragDrop: true,
+                fileName: "AttachmentFiles",
+                statusBarWidth: 600,
+                dragdropWidth: 600,
+                maxFileCount: 5,
+                maxFileSize: 1000 * 1024,
+                showPreview: true,
+                previewHeight: "50px",
+                previewWidth: "50px",
+                showDelete: true,
+                showDownload: true,
+                showFileSize: true,
+                showFileCounter: true,
+                allowTypes: "xml",
+                acceptFiles: "text/xml",
+                autoSubmit: false,
+                extraHTML: function () {
+                    var html = "<div>";
+                    @*html    += "<b>File tags:</b><input type='text' name='tags' value='' /> <br/>";*@
+                    html    += "</div>";
+                    return html;
+                },
+                customProgressBar: function (obj, s) {
+                    this.statusbar = $("<div class='ajax-file-upload-statusbar' style='display:flex;justify-content:left;align-items:center;width:100%;'></div>");
+                    this.preview = $("<img class='ajax-file-upload-preview' src='/favicon.ico' />").width(s.previewWidth).height(s.previewHeight).appendTo(this.statusbar);
+                    this.filename = $("<div class='ajax-file-upload-filename' style='width:100%;'></div>").appendTo(this.statusbar);
+                    this.progressDiv = $("<div class='ajax-file-upload-progress'>").appendTo(this.statusbar).hide();
+                    this.progressbar = $("<div class='ajax-file-upload-bar'></div>").appendTo(this.progressDiv);
+                    this.abort = $("<div>" + s.abortStr + "</div>").appendTo(this.statusbar).hide();
+                    this.cancel = $("<div>" + s.cancelStr + "</div>").appendTo(this.statusbar).hide();
+                    this.done = $("<div>" + s.doneStr + "</div>").appendTo(this.statusbar).hide();
+                    this.download = $("<div>" + s.downloadStr + "</div>").appendTo(this.statusbar).hide();
+                    this.del = $("<div>" + s.deleteStr + "</div>").appendTo(this.statusbar).hide();
+                    this.abort.addClass("custom-red btn btn-danger");
+                    this.done.addClass("custom-green btn btn-success");
+                    this.download.addClass("custom-green btn btn-success");
+                    this.cancel.addClass("custom-red btn btn-danger");
+                    this.del.addClass("custom-red btn btn-danger");
+                    if (count++ % 2 == 0) {
+                        this.statusbar.addClass("even");
+                    } else {
+                        this.statusbar.addClass("odd");
+                    }
+                    return this;
+                },
+                onLoad: function (obj) {
+                    console.log("onLoad Widget Loaded");
+                },
+                onSelect: function (files) {
+                    for (let i = 0; i < files.length; i++) {
+                        var file = files[i];
+                        console.log("onSelect " + file.name + " (" + file.size + ")");
+                    }
+                    document.getElementById("_myFileUpload").files = files;
+                    return true;
+                },
+                onSubmit: function (files) {
+                    console.log("onSubmit Submitting:" + JSON.stringify(files));
+                },
+                onSuccess: function (files, data, xhr, pd) {
+                    console.log("onSuccess Success for: " + JSON.stringify(data));
+                },
+                afterUploadAll: function (obj) {
+                    console.log("afterUploadAll All files are uploaded");
+                },
+                onError: function (files, status, errMsg, pd) {
+                    console.log("onError Error for: " + JSON.stringify(files));
+                },
+                onCancel: function (files, pd) {
+                    console.log("onCancel Canceled files: " + JSON.stringify(files));
+                },
+                deleteCallback: function (data, pd) {
+                    console.log("deleteCallback Delete files: " + JSON.stringify(files));
+                    @*for (var i = 0; i < data.length; i++) {
+                        $.post("delete.php", { op: "delete", name: data[i] },
+                            function (resp, textStatus, jqXHR) {
+                                alert("File Deleted");
+                            });
+                    }
+                    pd.statusbar.hide();*@
+                },
+                downloadCallback: function (filename, pd) {
+                    console.log("downloadCallback Download files: " + JSON.stringify(files));
+                    @*location.href = "download.php?filename=" + filename;*@
+                },
+                dragDropStr: "<span><b>Drag and drop files</b></span>",
+                abortStr: "Abort",
+                cancelStr: "Delete",
+                doneStr: "Done",
+                multiDragErrorStr: "Multiple File Drag & Drop is not allowed.",
+                extErrorStr: "is not allowed. Allowed extensions:",
+                sizeErrorStr: "is not allowed. Allowed Max size:",
+                dupateErrorStr: "is not allowed. File already exists.",
+                maxFileCountErrorStr: "is not allowed. Maximum allowed files are:",
+                uploadErrorStr: "Upload is not allowed",
+                uploadStr: '<div class="form"><div class="btn btn-default btn-file"><i class="fas fa-paperclip"></i>Attachment</div></div>',
+            });
+
+        })
+    </script>
+
+    <script>
+        function jsonEditorViewer(jsonData) {
+            var json_arr = JSON.parse((jsonData != "") ? jsonData : "[{\" \":\" \"}]");
+            $('#table_container').html(makeTable(json_arr));
+            $('.json_table').addClass('table table-bordered table-striped table-hover table-sm');
+            $('.json_table thead').addClass('thead-dark');
+        }
+
+        $(function () {
+            jsonEditorInit('table_container', 'json_input', 'json_output', 'btn_json_to_table', 'btn_table_to_json');
+            var dataObj = @Json.Serialize(Model.Document);
+            if (dataObj != null) {
+                var dataJson = JSON.stringify(dataObj);
+                console.log("Result Json Data:");
+                console.log(dataJson);
+                jsonEditorViewer(dataJson);
+            }
+        })
+    </script>
+}

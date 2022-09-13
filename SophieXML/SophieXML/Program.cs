@@ -20,6 +20,7 @@ namespace SophieXML
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
+                    //webBuilder.UseUrls("https://*:7443", "http://*:7080");
                     webBuilder.UseStartup<Startup>();
                 });
     }
